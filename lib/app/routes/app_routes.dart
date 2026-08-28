@@ -21,6 +21,7 @@ class AppRoutes {
   static const String productDetail = '/products/:id';
   static const String contactDetail = '/contacts/:id';
   static const String stockDetail = '/stocks/:id';
+  static const String scanner = '/scan';
 
   /// The shell a role belongs in. The only place role maps to route.
   static String shellFor(UserRole role) {

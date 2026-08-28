@@ -162,6 +162,33 @@ Tokens live in the keychain / keystore, never in `SharedPreferences`.
    the controller.
 6. Register the route in `app/routes/app_routes.dart` and `app_pages.dart`.
 
+## Scanning
+
+Every dashboard has a scan card. Tapping it asks the camera permission *before*
+opening the scanner, so the user never sees a black viewfinder behind a pending
+dialog — either the camera opens or we say why it did not.
+
+The four outcomes are handled separately, because they need different answers:
+granted opens the scanner; denied says "tap again to allow"; permanently denied
+offers a jump to Settings (iOS only ever shows its prompt once, so asking again
+would be a dead button); restricted explains that a policy or parental control
+is blocking it and there is nothing the user can do.
+
+What a scanned code *means* is each role's decision —
+`BaseDashboardController.onScanned` is abstract. Super admin and employee open
+the product; warehouse manager opens the stock line, because they are scanning
+shelf labels. Codes printed as a URL are reduced to their last path segment.
+
+Native setup, needed once per platform:
+
+- **Android** — `CAMERA` permission, plus `camera` and `camera.autofocus`
+  declared `required="false"` so the app still installs on a device without one.
+- **iOS** — `NSCameraUsageDescription` in `Info.plist`, and
+  `PERMISSION_CAMERA=1` in the Podfile's `post_install`. That second one
+  matters: `permission_handler` compiles every permission it ships unless told
+  which to keep, and App Store review rejects a binary that links the
+  microphone API with no matching usage string.
+
 ## Platform notes
 
 **Android.** Kotlin DSL, `minSdk 24`, application id

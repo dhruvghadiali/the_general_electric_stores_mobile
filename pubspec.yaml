@@ -31,6 +31,10 @@ dependencies:
   # UI
   cached_network_image: ^3.4.1
 
+  # Scanning
+  mobile_scanner: ^7.0.0
+  permission_handler: ^11.3.1
+
   # Utilities
   intl: ^0.19.0
   logger: ^2.5.0

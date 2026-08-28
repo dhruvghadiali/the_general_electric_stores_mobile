@@ -8,6 +8,8 @@ import 'package:the_general_electric_stores_mobile/features/auth/bindings/auth_b
 import 'package:the_general_electric_stores_mobile/features/auth/views/login_view.dart';
 import 'package:the_general_electric_stores_mobile/features/contacts/views/contact_detail_view.dart';
 import 'package:the_general_electric_stores_mobile/features/products/views/product_detail_view.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/bindings/scanner_binding.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/views/scanner_view.dart';
 import 'package:the_general_electric_stores_mobile/features/shell/bindings/detail_bindings.dart';
 import 'package:the_general_electric_stores_mobile/features/shell/bindings/shell_binding.dart';
 import 'package:the_general_electric_stores_mobile/features/shell/views/app_shell_view.dart';
@@ -97,6 +99,15 @@ class AppPages {
         AuthMiddleware(),
         DestinationMiddleware(AppDestination.contacts),
       ],
+    ),
+    // Any signed-in role may scan; what a scanned code *means* is the
+    // dashboard's decision, and the detail route it opens is guarded there.
+    GetPage<dynamic>(
+      name: AppRoutes.scanner,
+      page: () => const ScannerView(),
+      binding: ScannerBinding(),
+      middlewares: <GetMiddleware>[AuthMiddleware()],
+      fullscreenDialog: true,
     ),
     GetPage<void>(
       name: AppRoutes.stockDetail,
