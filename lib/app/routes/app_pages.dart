@@ -9,6 +9,9 @@ import 'package:the_general_electric_stores_mobile/features/auth/views/login_vie
 import 'package:the_general_electric_stores_mobile/features/contacts/views/contact_detail_view.dart';
 import 'package:the_general_electric_stores_mobile/features/products/views/product_detail_view.dart';
 import 'package:the_general_electric_stores_mobile/features/scanner/bindings/scanner_binding.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/views/scan_company_view.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/views/scan_options_view.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/views/scanned_items_view.dart';
 import 'package:the_general_electric_stores_mobile/features/scanner/views/scanner_view.dart';
 import 'package:the_general_electric_stores_mobile/features/shell/bindings/detail_bindings.dart';
 import 'package:the_general_electric_stores_mobile/features/shell/bindings/shell_binding.dart';
@@ -100,14 +103,34 @@ class AppPages {
         DestinationMiddleware(AppDestination.contacts),
       ],
     ),
-    // Any signed-in role may scan; what a scanned code *means* is the
-    // dashboard's decision, and the detail route it opens is guarded there.
+    // Scanning is four hops: what the scan is for, which company it is
+    // against, the list of codes read, and the camera that fills that list.
+    // Any signed-in role may scan; what the codes *mean* is the dashboard's
+    // decision once the session hands them back.
     GetPage<dynamic>(
       name: AppRoutes.scanner,
+      page: () => const ScanOptionsView(),
+      binding: ScanOptionsBinding(),
+      middlewares: <GetMiddleware>[AuthMiddleware()],
+      fullscreenDialog: true,
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.scanCompany,
+      page: () => const ScanCompanyView(),
+      binding: ScanCompanyBinding(),
+      middlewares: <GetMiddleware>[AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.scanItems,
+      page: () => const ScannedItemsView(),
+      binding: ScannedItemsBinding(),
+      middlewares: <GetMiddleware>[AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.scannerCamera,
       page: () => const ScannerView(),
       binding: ScannerBinding(),
       middlewares: <GetMiddleware>[AuthMiddleware()],
-      fullscreenDialog: true,
     ),
     GetPage<void>(
       name: AppRoutes.stockDetail,

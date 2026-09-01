@@ -1,31 +1,30 @@
 import 'package:dio/dio.dart';
 
 import 'package:the_general_electric_stores_mobile/core/constants/api_endpoints.dart';
-import 'package:the_general_electric_stores_mobile/core/constants/user_role.dart';
 import 'package:the_general_electric_stores_mobile/core/services/storage_service.dart';
 
-/// Attaches the bearer token to every outgoing request and, when the API
-/// answers 401, refreshes it once and replays the original request.
+/// Attaches the bearer token to every outgoing request, and ends the session
+/// when the API stops accepting it.
 ///
-/// A second 401 on the same request is a dead session: the queue is cleared,
-/// storage is wiped and [onSessionExpired] is called so the app can route back
-/// to login. The refresh call itself is never retried, which is what stops the
-/// interceptor recursing.
+/// There is no refresh here, and none is missing. The API issues one
+/// self-contained JWT at signin — `jwt.sign({ user_type }, secret, { subject,
+/// expiresIn })` — and mounts no route to renew, confirm or revoke it. So a 401
+/// has exactly one meaning: the token is spent, and the only way back is
+/// signing in again. Retrying it, queueing behind a refresh, or holding the
+/// request open would all be pretending there is a second chance to be had.
 class AuthInterceptor extends QueuedInterceptor {
   AuthInterceptor({
-    required Dio dio,
     required StorageService storage,
     required Future<void> Function() onSessionExpired,
-  })  : _dio = dio,
-        _storage = storage,
+  })  : _storage = storage,
         _onSessionExpired = onSessionExpired;
 
-  final Dio _dio;
   final StorageService _storage;
   final Future<void> Function() _onSessionExpired;
 
-  /// Auth paths are role-scoped (`/employee/signin`), so matching on the
-  /// suffix keeps this correct however many roles exist.
+  /// Signin is the one path that carries no token. Auth paths are role-scoped
+  /// (`/employee/auth/signin`), so matching on the suffix keeps this correct
+  /// however many roles exist.
   bool _isPublic(String path) => ApiEndpoints.publicSuffixes
       .any((String suffix) => path.endsWith(suffix));
 
@@ -48,74 +47,16 @@ class AuthInterceptor extends QueuedInterceptor {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
-    final RequestOptions request = err.requestOptions;
-    final bool retryable = err.response?.statusCode == 401 &&
-        !_isPublic(request.path) &&
-        request.extra['retried'] != true;
+    final bool sessionOver = err.response?.statusCode == 401 &&
+        !_isPublic(err.requestOptions.path);
 
-    if (!retryable) {
-      handler.next(err);
-      return;
-    }
-
-    final bool refreshed = await _refresh();
-    if (!refreshed) {
+    if (sessionOver) {
+      // Cleared before the error travels on, so whatever screen handles it is
+      // already looking at a signed-out app rather than racing this.
       await _storage.clearSession();
       await _onSessionExpired();
-      handler.next(err);
-      return;
     }
 
-    try {
-      request.extra['retried'] = true;
-      final String? token = await _storage.accessToken;
-      request.headers['Authorization'] = 'Bearer $token';
-      final Response<dynamic> response = await _dio.fetch<dynamic>(request);
-      handler.resolve(response);
-    } on DioException catch (retryError) {
-      handler.next(retryError);
-    }
+    handler.next(err);
   }
-
-  Future<bool> _refresh() async {
-    final String? refreshToken = await _storage.refreshToken;
-    if (refreshToken == null || refreshToken.isEmpty) return false;
-
-    // The refresh path is scoped by the role the session was opened under.
-    // Without it there is no path to call, so a session with no stored role
-    // cannot be refreshed and has to sign in again.
-    final UserRole? role = _storage.signedInRole;
-    if (role == null) return false;
-
-    try {
-      final Response<dynamic> response = await _dio.post<dynamic>(
-        ApiEndpoints.refreshToken(role),
-        data: <String, dynamic>{'refresh_token': refreshToken},
-      );
-
-      final Object? body = response.data;
-      if (body is! Map<String, dynamic>) return false;
-
-      final Object? data = body['data'];
-      final Map<String, dynamic>? tokens = data is Map<String, dynamic>
-          ? data
-          : (data is List && data.isNotEmpty && data.first is Map)
-              ? Map<String, dynamic>.from(data.first as Map<dynamic, dynamic>)
-              : null;
-      if (tokens == null) return false;
-
-      final Object? access = tokens['access_token'] ?? tokens['token'];
-      if (access is! String || access.isEmpty) return false;
-
-      final Object? next = tokens['refresh_token'];
-      await _storage.saveTokens(
-        accessToken: access,
-        refreshToken: next is String && next.isNotEmpty ? next : null,
-      );
-      return true;
-    } on DioException {
-      return false;
-    }
-  }
-
 }

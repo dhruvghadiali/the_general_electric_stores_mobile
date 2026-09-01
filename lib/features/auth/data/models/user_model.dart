@@ -54,7 +54,11 @@ class UserModel {
       username: '${json['username'] ?? json['user_name'] ?? ''}',
       firstName: '${json['first_name'] ?? json['firstName'] ?? ''}',
       lastName: '${json['last_name'] ?? json['lastName'] ?? ''}',
-      phone: json['phone']?.toString() ?? json['mobile']?.toString(),
+      // The API's column is `phone_number` — that is the name the signin
+      // payload carries (`auth_response.SIGNED_IN_USER_SELECT`).
+      phone: json['phone_number']?.toString() ??
+          json['phone']?.toString() ??
+          json['mobile']?.toString(),
       userType: json['user_type']?.toString() ?? json['role']?.toString(),
       avatarUrl:
           json['avatar_url']?.toString() ?? json['profile_image']?.toString(),
@@ -70,7 +74,7 @@ class UserModel {
         'username': username,
         'first_name': firstName,
         'last_name': lastName,
-        'phone': phone,
+        'phone_number': phone,
         'user_type': userType,
         'avatar_url': avatarUrl,
         'is_active': isActive,

@@ -20,7 +20,7 @@ class ScannerView extends GetView<ScannerController> {
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
-        title: const Text('Scan QR code'),
+        title: Text(controller.purpose.label),
         leading: IconButton(
           onPressed: controller.cancel,
           icon: const Icon(Icons.close_rounded),
@@ -40,47 +40,91 @@ class ScannerView extends GetView<ScannerController> {
           ),
         ],
       ),
-      body: Stack(
-        fit: StackFit.expand,
-        children: <Widget>[
-          MobileScanner(
-            controller: controller.scanner,
-            errorBuilder: (
-              BuildContext context,
-              MobileScannerException error,
-            ) =>
-                _CameraUnavailable(error: error),
-          ),
-          const _ViewfinderOverlay(),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: AppDimens.xxl,
-            child: Text(
-              'Point the camera at a QR code',
-              textAlign: TextAlign.center,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(color: Colors.white70),
+      // The failure states sit *above* the feed rather than replacing it, so
+      // there is never a moment where the screen is black and says nothing.
+      body: Obx(() {
+        final String? error = controller.startError.value;
+
+        if (error != null) {
+          return _CameraUnavailable(
+            message: error,
+            onRetry: controller.start,
+          );
+        }
+
+        return Stack(
+          fit: StackFit.expand,
+          children: <Widget>[
+            MobileScanner(
+              controller: controller.scanner,
+              errorBuilder: (
+                BuildContext context,
+                MobileScannerException error,
+              ) =>
+                  _CameraUnavailable(
+                message: error.errorDetails?.message ?? error.errorCode.name,
+                onRetry: controller.start,
+              ),
             ),
-          ),
-        ],
-      ),
+            const _ViewfinderOverlay(),
+            if (controller.isStarting.value)
+              const ColoredBox(
+                color: Colors.black,
+                child: Center(
+                  child: CircularProgressIndicator(color: Colors.white70),
+                ),
+              ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: AppDimens.xxl,
+              child: Text(
+                controller.isStarting.value
+                    ? 'Opening the camera…'
+                    : 'Point the camera at a QR code or barcode',
+                textAlign: TextAlign.center,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: Colors.white70),
+              ),
+            ),
+          ],
+        );
+      }),
     );
   }
 }
 
-/// A cut-out square with the rest of the frame dimmed, so it is obvious where
+/// A cut-out window with the rest of the frame dimmed, so it is obvious where
 /// the code has to sit.
+///
+/// Wider than it is tall, because the two things being scanned want opposite
+/// shapes: a QR is square, a barcode is a long thin stripe. A square window
+/// tells someone holding a carton to centre a 90mm barcode inside a 200px box,
+/// which they cannot do without backing away until the bars stop resolving.
+/// The 3:2 window fits a barcode along its length and still leaves a QR the
+/// full height, so neither is being asked to fit the other's shape.
 class _ViewfinderOverlay extends StatelessWidget {
   const _ViewfinderOverlay();
+
+  /// Window height as a fraction of its width.
+  static const double _aspect = 2 / 3;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final double side = constraints.biggest.shortestSide * 0.68;
+        final Size size = constraints.biggest;
+
+        // Bounded on both axes so a landscape phone gets a window that still
+        // fits on screen rather than one running off the sides.
+        final double width = <double>[
+          size.width * 0.86,
+          size.height * 0.7 / _aspect,
+          420,
+        ].reduce((double a, double b) => a < b ? a : b);
+        final double height = width * _aspect;
 
         return Stack(
           alignment: Alignment.center,
@@ -102,8 +146,8 @@ class _ViewfinderOverlay extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    height: side,
-                    width: side,
+                    height: height,
+                    width: width,
                     decoration: BoxDecoration(
                       color: Colors.black,
                       borderRadius: BorderRadius.circular(AppDimens.radiusLg),
@@ -113,8 +157,8 @@ class _ViewfinderOverlay extends StatelessWidget {
               ),
             ),
             Container(
-              height: side,
-              width: side,
+              height: height,
+              width: width,
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.white70, width: 2),
                 borderRadius: BorderRadius.circular(AppDimens.radiusLg),
@@ -128,45 +172,59 @@ class _ViewfinderOverlay extends StatelessWidget {
 }
 
 /// The camera can fail after permission is granted — another app holding it,
-/// an emulator with no camera, hardware trouble. Saying so beats a black
-/// rectangle.
+/// a simulator with no camera at all, hardware trouble. Saying so, with the
+/// platform's own words and a way to try again, beats a black rectangle.
 class _CameraUnavailable extends StatelessWidget {
-  const _CameraUnavailable({required this.error});
+  const _CameraUnavailable({required this.message, required this.onRetry});
 
-  final MobileScannerException error;
+  final String message;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppDimens.xl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            const Icon(
-              Icons.videocam_off_outlined,
-              size: AppDimens.xxxl,
-              color: Colors.white70,
-            ),
-            const SizedBox(height: AppDimens.lg),
-            Text(
-              'The camera could not be started',
-              textAlign: TextAlign.center,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(color: Colors.white),
-            ),
-            const SizedBox(height: AppDimens.sm),
-            Text(
-              error.errorDetails?.message ?? error.errorCode.name,
-              textAlign: TextAlign.center,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: Colors.white60),
-            ),
-          ],
+    return ColoredBox(
+      color: Colors.black,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppDimens.xl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              const Icon(
+                Icons.videocam_off_outlined,
+                size: AppDimens.xxxl,
+                color: Colors.white70,
+              ),
+              const SizedBox(height: AppDimens.lg),
+              Text(
+                'The camera could not be started',
+                textAlign: TextAlign.center,
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(color: Colors.white),
+              ),
+              const SizedBox(height: AppDimens.sm),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: Colors.white60),
+              ),
+              const SizedBox(height: AppDimens.xl),
+              OutlinedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Try again'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: const BorderSide(color: Colors.white54),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -1,8 +1,24 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
     // The Flutter Gradle Plugin must come after the Android and Kotlin plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+// Release signing comes from android/key.properties, which is gitignored.
+//
+// Read here at the top level, not inside `android { }`: in there `java`
+// resolves to Gradle's Java plugin extension rather than the `java.*` package,
+// so `java.util.Properties()` fails to compile. The import above plus this
+// placement avoids the collision entirely.
+val keystorePropertiesFile = rootProject.file("key.properties")
+val hasReleaseKeystore = keystorePropertiesFile.exists()
+val keystoreProperties = Properties().apply {
+    if (hasReleaseKeystore) {
+        keystorePropertiesFile.inputStream().use { load(it) }
+    }
 }
 
 android {
@@ -32,19 +48,16 @@ android {
     }
 
     signingConfigs {
-        // Release signing is read from android/key.properties, which is
-        // gitignored. Until that file exists, release builds fall back to the
-        // debug key so `flutter build apk --release` still runs locally.
-        create("release") {
-            val keystoreProperties = java.util.Properties()
-            val keystoreFile = rootProject.file("key.properties")
-            if (keystoreFile.exists()) {
-                keystoreFile.inputStream().use { keystoreProperties.load(it) }
+        // Only declared when the keystore file is actually present, so a fresh
+        // clone does not carry an empty, unusable signing config around.
+        if (hasReleaseKeystore) {
+            create("release") {
                 keyAlias = keystoreProperties.getProperty("keyAlias")
                 keyPassword = keystoreProperties.getProperty("keyPassword")
-                storeFile = keystoreProperties.getProperty("storeFile")
-                    ?.let { file(it) }
                 storePassword = keystoreProperties.getProperty("storePassword")
+                storeFile = keystoreProperties.getProperty("storeFile")?.let {
+                    file(it)
+                }
             }
         }
     }
@@ -57,8 +70,9 @@ android {
         }
 
         getByName("release") {
-            val keystoreFile = rootProject.file("key.properties")
-            signingConfig = if (keystoreFile.exists()) {
+            // Falls back to the debug key until key.properties exists, so
+            // `flutter build apk --release` still runs on a fresh clone.
+            signingConfig = if (hasReleaseKeystore) {
                 signingConfigs.getByName("release")
             } else {
                 signingConfigs.getByName("debug")

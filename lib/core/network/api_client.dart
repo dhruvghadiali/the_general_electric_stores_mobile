@@ -42,7 +42,6 @@ class ApiClient extends GetxService {
 
     _dio.interceptors.addAll(<Interceptor>[
       AuthInterceptor(
-        dio: _dio,
         storage: StorageService.to,
         onSessionExpired: () async => onSessionExpired?.call(),
       ),

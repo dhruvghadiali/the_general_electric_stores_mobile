@@ -2,7 +2,6 @@ import 'package:get/get.dart';
 
 import 'package:the_general_electric_stores_mobile/core/constants/user_role.dart';
 import 'package:the_general_electric_stores_mobile/core/network/api_client.dart';
-import 'package:the_general_electric_stores_mobile/features/auth/data/repositories/auth_repository.dart';
 import 'package:the_general_electric_stores_mobile/features/contacts/controllers/employee_contacts_controller.dart';
 import 'package:the_general_electric_stores_mobile/features/contacts/controllers/super_admin_contacts_controller.dart';
 import 'package:the_general_electric_stores_mobile/features/contacts/data/repositories/contact_repository.dart';
@@ -33,10 +32,13 @@ abstract class _RoleShellBinding extends Bindings {
   final UserRole role;
 
   /// Shared by every shell: the tab index, and settings.
+  ///
+  /// No `AuthRepository` here any more. The only auth call the API has is
+  /// signin, which belongs to the login screen; settings signs out locally and
+  /// has nothing to ask the server for.
   void _common() {
     Get.put<ShellController>(ShellController(role));
-    Get.lazyPut<AuthRepository>(() => AuthRepository(ApiClient.to), fenix: true);
-    Get.put<SettingsController>(SettingsController(Get.find(), role));
+    Get.put<SettingsController>(SettingsController(role));
   }
 }
 

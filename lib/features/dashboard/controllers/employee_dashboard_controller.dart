@@ -1,6 +1,3 @@
-import 'package:get/get.dart';
-
-import 'package:the_general_electric_stores_mobile/app/routes/app_routes.dart';
 import 'package:the_general_electric_stores_mobile/core/constants/user_role.dart';
 import 'package:the_general_electric_stores_mobile/features/dashboard/controllers/base_dashboard_controller.dart';
 import 'package:the_general_electric_stores_mobile/features/dashboard/data/repositories/dashboard_repository.dart';
@@ -18,10 +15,4 @@ class EmployeeDashboardController extends BaseDashboardController {
 
   num? get myOrders =>
       summary.value.read(<String>['my_orders', 'orders_total', 'orders']);
-
-  /// A scanned sticker is a product for an employee too — the same route, but
-  /// the employee's own read-only product screen behind it.
-  @override
-  void onScanned(String code) =>
-      Get.toNamed<void>(AppRoutes.productDetailPath(idFromCode(code)));
 }

@@ -1,6 +1,3 @@
-import 'package:get/get.dart';
-
-import 'package:the_general_electric_stores_mobile/app/routes/app_routes.dart';
 import 'package:the_general_electric_stores_mobile/core/constants/user_role.dart';
 import 'package:the_general_electric_stores_mobile/features/dashboard/controllers/base_dashboard_controller.dart';
 import 'package:the_general_electric_stores_mobile/features/dashboard/data/repositories/dashboard_repository.dart';
@@ -22,9 +19,4 @@ class SuperAdminDashboardController extends BaseDashboardController {
 
   num? get totalOrders =>
       summary.value.read(<String>['orders_total', 'total_orders', 'orders']);
-
-  /// A scanned sticker is a product for a super admin.
-  @override
-  void onScanned(String code) =>
-      Get.toNamed<void>(AppRoutes.productDetailPath(idFromCode(code)));
 }

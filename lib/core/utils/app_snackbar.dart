@@ -33,18 +33,64 @@ class AppSnackbar {
     if (message.trim().isEmpty) return;
     if (Get.isSnackbarOpen) Get.closeCurrentSnackbar();
 
+    // Every part of this is given a size on purpose.
+    //
+    // GetX builds the snackbar's own `Row` and `Column` from the bare `title`
+    // and `message` strings, and it does so inside an overlay whose
+    // constraints are not the screen's. A `Text` that is free to be as wide as
+    // it likes then reports an intrinsic width in the tens of thousands of
+    // pixels, and the flex around it overflows by that much:
+    //
+    //     A RenderFlex overflowed by 99633 pixels on the right.
+    //
+    // Passing `titleText` and `messageText` means GetX uses these widgets
+    // instead of building its own, so the line limits and ellipsis below are
+    // what bound the layout. The icon is boxed for the same reason — an
+    // unsized `Icon` in that row is the other half of the problem.
     Get.snackbar(
-      title,
-      message,
+      '',
+      '',
+      titleText: Text(
+        title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+          fontSize: 15,
+        ),
+      ),
+      messageText: Text(
+        message,
+        maxLines: 4,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(color: Colors.white, fontSize: 14),
+      ),
+      icon: SizedBox(
+        width: AppDimens.xxl,
+        height: AppDimens.xxl,
+        child: Icon(icon, color: Colors.white, size: AppDimens.iconLg),
+      ),
       snackPosition: SnackPosition.BOTTOM,
       duration: AppConstants.snackBarDuration,
       margin: const EdgeInsets.all(AppDimens.lg),
+      padding: const EdgeInsets.all(AppDimens.lg),
       borderRadius: AppDimens.radiusMd,
       backgroundColor: color,
       colorText: Colors.white,
-      icon: Icon(icon, color: Colors.white),
       shouldIconPulse: false,
       isDismissible: true,
+      maxWidth: _maxWidth,
     );
+  }
+
+  /// The snackbar never grows past this, whatever the overlay offers it.
+  ///
+  /// A width rather than no width: without one the snackbar inherits whatever
+  /// the overlay hands down, which during a route transition is not the screen.
+  static double? get _maxWidth {
+    final double screen = Get.width;
+    if (screen <= 0 || !screen.isFinite) return 400;
+    return screen < 600 ? screen : 600;
   }
 }

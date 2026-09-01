@@ -85,15 +85,34 @@ class PaginatedResult<T> {
   /// Reads `{ <itemsKey>: [...], pagination: {...} }`.
   ///
   /// [itemsKey] is the plural name the controller used — `products`,
-  /// `contacts`, `stocks`. When the server returned a bare array instead, the
-  /// array is the page and pagination falls back to a single page.
+  /// `contacts`, `companies`. Three shapes arrive here and all three are real:
+  ///
+  /// ```
+  /// data: { companies: [...], pagination: {...} }     the composite
+  /// data: [ { companies: [...], pagination: {...} } ] the composite, wrapped
+  /// data: [ {...}, {...} ]                            a bare array of rows
+  /// ```
+  ///
+  /// The middle one is what `send_response` produces — it wraps whatever it is
+  /// given in a list. Unwrapping is deliberately conditional on the first
+  /// element carrying [itemsKey] or `pagination`: a bare array holding exactly
+  /// one row looks identical otherwise, and would be read as an empty page.
   factory PaginatedResult.fromData(
     Object? data, {
     required String itemsKey,
     required T Function(Map<String, dynamic> json) parser,
   }) {
-    if (data is List) {
-      final List<T> items = data
+    Object? node = data;
+    if (node is List && node.isNotEmpty) {
+      final Object? first = node.first;
+      if (first is Map<String, dynamic> &&
+          (first.containsKey(itemsKey) || first.containsKey('pagination'))) {
+        node = first;
+      }
+    }
+
+    if (node is List) {
+      final List<T> items = node
           .whereType<Map<String, dynamic>>()
           .map(parser)
           .toList(growable: false);
@@ -108,9 +127,9 @@ class PaginatedResult<T> {
       );
     }
 
-    if (data is Map<String, dynamic>) {
-      final Object? rows = data[itemsKey] ?? data['items'] ?? data['records'];
-      final Object? page = data['pagination'];
+    if (node is Map<String, dynamic>) {
+      final Object? rows = node[itemsKey] ?? node['items'] ?? node['records'];
+      final Object? page = node['pagination'];
 
       return PaginatedResult<T>(
         items: rows is List

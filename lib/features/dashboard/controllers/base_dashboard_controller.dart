@@ -8,8 +8,10 @@ import 'package:the_general_electric_stores_mobile/core/constants/user_role.dart
 import 'package:the_general_electric_stores_mobile/core/network/api_exception.dart';
 import 'package:the_general_electric_stores_mobile/core/services/camera_permission.dart';
 import 'package:the_general_electric_stores_mobile/core/utils/app_snackbar.dart';
+import 'package:the_general_electric_stores_mobile/core/utils/logger.dart';
 import 'package:the_general_electric_stores_mobile/features/dashboard/data/models/dashboard_summary.dart';
 import 'package:the_general_electric_stores_mobile/features/dashboard/data/repositories/dashboard_repository.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/data/models/scan_purpose.dart';
 
 /// Loading and failure handling shared by all three dashboards.
 ///
@@ -51,24 +53,24 @@ abstract class BaseDashboardController extends GetxController {
 
   // ------------------------------------------------------------- scanning
 
-  /// Opens the scanner, asking for the camera first.
+  /// Starts a scan: permission, then the purpose chooser, then the camera.
   ///
-  /// The permission is checked here rather than inside the scanner screen so
-  /// the user never sees a black viewfinder while a dialog is pending — either
-  /// the camera is available and the screen opens, or it never opens and we
-  /// say why.
+  /// The permission is checked here rather than deeper in so the user is never
+  /// walked through a chooser only to be refused the camera at the end of it.
   Future<void> openScanner() async {
     final CameraPermissionResult permission = await CameraPermission.ensure();
 
     switch (permission) {
       case CameraPermissionResult.granted:
-        // Not `Get.toNamed<String>`. GetX's onGenerateRoute always builds a
-        // `GetPageRoute<dynamic>`, and `pushNamed<String>` then tries to cast
-        // it to `Route<String?>` — which throws, because String is not a top
-        // type. `Object?` is, so the cast succeeds and we narrow afterwards.
-        // The `Get.toNamed<void>` calls elsewhere work for the same reason.
+        // Not `Get.toNamed<ScanResult>`. GetX's onGenerateRoute always builds
+        // a `GetPageRoute<dynamic>`, and a non-top-type generic makes
+        // `pushNamed` throw on the cast. `Object?` is a top type, so the cast
+        // succeeds and we narrow afterwards. The `Get.toNamed<void>` calls
+        // elsewhere work for the same reason.
         final Object? scanned = await Get.toNamed<Object?>(AppRoutes.scanner);
-        if (scanned is String && scanned.isNotEmpty) onScanned(scanned);
+        if (scanned is ScanResult && scanned.isNotEmpty) {
+          onScanned(scanned);
+        }
 
       case CameraPermissionResult.denied:
         AppSnackbar.info(
@@ -88,19 +90,64 @@ abstract class BaseDashboardController extends GetxController {
     }
   }
 
-  /// What a scanned code means to this role. Each dashboard decides, because
-  /// the same QR sticker opens a product for one role and a stock line for
-  /// another.
-  void onScanned(String code);
+  /// What a finished scanning session means to this role.
+  ///
+  /// The default acknowledges it and stops there, and that is the honest
+  /// behaviour today rather than a placeholder. Every role used to push a
+  /// detail route built from the scanned string — `/products/<code>` or
+  /// `/stocks/<code>` — and all three were wrong in the same way: a scanned
+  /// code is not a record id. It is either a `product_code` a manufacturer
+  /// printed, or an identifier of ours that no endpoint currently accepts. The
+  /// warehouse manager's case is the clearest: there is no stocks router on the
+  /// API at all.
+  ///
+  /// The codes have been shown, kept and handed back. Sending them anywhere
+  /// needs two things that do not exist yet:
+  ///
+  ///  * a lookup for barcodes — `product_code` is in the product list's
+  ///    `search_fields`, so `GET /{role}/products?search=<code>` would resolve
+  ///    one, for the two roles that have a products router;
+  ///  * a destination for the session — [ScanResult.purpose] distinguishes
+  ///    stock arriving from stock leaving, and `POST /warehouse-manager/
+  ///    purchases` is the closest thing the API has to a home for the first.
+  ///
+  /// A role that grows a real destination overrides this.
+  void onScanned(ScanResult result) {
+    final String reading = result.count == 1 ? 'code' : 'codes';
+    AppSnackbar.success(
+      '${result.count} $reading scanned for ${result.company.name} '
+      '(${result.purpose.label.toLowerCase()}).',
+      title: 'Scan finished',
+    );
+  }
 
   /// Codes are often printed as a URL rather than a bare id. Take the last
   /// path segment when it looks like one, otherwise use the value as it is.
+  ///
+  /// A one-dimensional barcode has no scheme, so it falls through unchanged —
+  /// which is correct as far as it goes, but see [onScanned]: unchanged still
+  /// means it is a product code being used where an id is expected.
+  ///
+  /// Whatever comes out is safe to put in a route: `AppRoutes` encodes the
+  /// segment. It is not necessarily safe to *look up* — a value that is not an
+  /// id will simply not be found, which is a 404 rather than a crash.
   String idFromCode(String code) {
-    final Uri? uri = Uri.tryParse(code);
+    final String value = code.trim();
+
+    final Uri? uri = Uri.tryParse(value);
     if (uri != null && uri.hasScheme && uri.pathSegments.isNotEmpty) {
       return uri.pathSegments.last;
     }
-    return code;
+
+    // Logged rather than cleaned up. A code carrying slashes or spaces is
+    // almost certainly not one of our ids — a scheme-less URL, or a label
+    // encoding more than an identifier — and guessing which part of it is the
+    // id would turn a visible 404 into a silent lookup of the wrong record.
+    if (value.contains(RegExp(r'[\s/?#]'))) {
+      AppLogger.w('Scanned code does not look like an id: "$value"');
+    }
+
+    return value;
   }
 
   Future<void> _offerSettings() async {

@@ -47,13 +47,25 @@ class AppButton extends StatelessWidget {
   }
 
   Widget _label() {
-    if (icon == null) return Text(label);
+    if (icon == null) {
+      return Text(label, maxLines: 1, overflow: TextOverflow.ellipsis);
+    }
+
+    // `Flexible` around the text, not a bare `Text`.
+    //
+    // This row is `MainAxisSize.min`, so it asks for exactly icon + gap +
+    // label. Put two of these side by side in a narrow row — "Scan another"
+    // next to "Done" on a small phone — and the label wants more width than
+    // the button was given, which a plain `Text` cannot give up. The result is
+    // a RenderFlex overflow on the right at paint time.
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         Icon(icon, size: AppDimens.iconMd),
         const SizedBox(width: AppDimens.sm),
-        Text(label),
+        Flexible(
+          child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+        ),
       ],
     );
   }
