@@ -47,9 +47,24 @@ class CompanyRepository {
   /// companies is the wrong control regardless of how patiently it loaded them,
   /// and the cap is what stops a wrong `total_pages` fetching forever. Reaching
   /// it is reported rather than hidden — see [CompanyPage.isComplete].
-  Future<CompanyPage> activeCompanies(UserRole role, {int maxPages = 25}) async {
+  ///
+  /// [companyType] narrows the walk to one `company_type` — a purchase asks for
+  /// suppliers, and filtering on the server is the only version of that which
+  /// stays correct once the list is longer than one page.
+  Future<CompanyPage> activeCompanies(
+    UserRole role, {
+    String? companyType,
+    int maxPages = 25,
+  }) async {
     final List<CompanyModel> all = <CompanyModel>[];
-    ListQuery query = activePickerQuery;
+    ListQuery query = companyType == null
+        ? activePickerQuery
+        : activePickerQuery.copyWith(
+            filters: <String, dynamic>{
+              ...activePickerQuery.filters,
+              'company_type': companyType,
+            },
+          );
 
     for (int fetched = 0; fetched < maxPages; fetched++) {
       final PaginatedResult<CompanyModel> page = await list(role, query);

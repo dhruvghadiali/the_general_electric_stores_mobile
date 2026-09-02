@@ -1,4 +1,5 @@
 import 'package:the_general_electric_stores_mobile/core/constants/user_role.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/constants/scan_purpose.dart';
 
 /// Route names. Nothing navigates with a string literal.
 ///
@@ -27,6 +28,10 @@ class AppRoutes {
   static const String scanCompany = '/scan/company';
   static const String scanItems = '/scan/items';
   static const String scannerCamera = '/scan/camera';
+  // Where the purpose chooser leads: one screen per direction the stock is
+  // moving, because what happens next differs from the first field onwards.
+  static const String purchaseStock = '/scan/purchase-stock';
+  static const String salesStock = '/scan/sales-stock';
 
   /// The shell a role belongs in. The only place role maps to route.
   static String shellFor(UserRole role) {
@@ -37,6 +42,16 @@ class AppRoutes {
         return employee;
       case UserRole.warehouseManager:
         return warehouseManager;
+    }
+  }
+
+  /// The screen a chosen purpose opens. The only place purpose maps to route.
+  static String forPurpose(ScanPurpose purpose) {
+    switch (purpose) {
+      case ScanPurpose.purchase:
+        return purchaseStock;
+      case ScanPurpose.sales:
+        return salesStock;
     }
   }
 

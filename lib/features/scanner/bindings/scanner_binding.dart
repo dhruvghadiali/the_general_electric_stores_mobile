@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import 'package:the_general_electric_stores_mobile/core/network/api_client.dart';
 import 'package:the_general_electric_stores_mobile/features/companies/data/repositories/company_repository.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/controllers/purchase_stock_controller.dart';
 import 'package:the_general_electric_stores_mobile/features/scanner/controllers/scan_company_controller.dart';
 import 'package:the_general_electric_stores_mobile/features/scanner/controllers/scan_options_controller.dart';
 import 'package:the_general_electric_stores_mobile/features/scanner/controllers/scanned_items_controller.dart';
@@ -25,6 +26,18 @@ class ScanCompanyBinding extends Bindings {
     );
     // `put`, not `lazyPut`: the controller fetches the company list in onInit.
     Get.put<ScanCompanyController>(ScanCompanyController(Get.find()));
+  }
+}
+
+class PurchaseStockBinding extends Bindings {
+  @override
+  void dependencies() {
+    Get.lazyPut<CompanyRepository>(
+      () => CompanyRepository(ApiClient.to),
+      fenix: true,
+    );
+    // `put`, not `lazyPut`: the controller fetches the supplier list in onInit.
+    Get.put<PurchaseStockController>(PurchaseStockController(Get.find()));
   }
 }
 

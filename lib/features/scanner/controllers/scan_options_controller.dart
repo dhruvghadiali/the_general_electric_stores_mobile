@@ -14,7 +14,7 @@ class ScanOptionsController extends GetxController {
     // `Object?`, not `ScanResult`: GetX's onGenerateRoute always builds a
     // `GetPageRoute<dynamic>`, and a non-top-type generic makes the cast throw.
     final Object? result = await Get.toNamed<Object?>(
-      AppRoutes.scanCompany,
+      AppRoutes.forPurpose(purpose),
       arguments: purpose,
     );
 

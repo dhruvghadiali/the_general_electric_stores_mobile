@@ -1,5 +1,4 @@
 import 'package:get/get.dart';
-
 import 'package:the_general_electric_stores_mobile/app/routes/app_routes.dart';
 import 'package:the_general_electric_stores_mobile/core/constants/user_role.dart';
 import 'package:the_general_electric_stores_mobile/core/middleware/auth_middleware.dart';
@@ -9,6 +8,8 @@ import 'package:the_general_electric_stores_mobile/features/auth/views/login_vie
 import 'package:the_general_electric_stores_mobile/features/contacts/views/contact_detail_view.dart';
 import 'package:the_general_electric_stores_mobile/features/products/views/product_detail_view.dart';
 import 'package:the_general_electric_stores_mobile/features/scanner/bindings/scanner_binding.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/views/purchase_stock_view.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/views/sales_stock_view.dart';
 import 'package:the_general_electric_stores_mobile/features/scanner/views/scan_company_view.dart';
 import 'package:the_general_electric_stores_mobile/features/scanner/views/scan_options_view.dart';
 import 'package:the_general_electric_stores_mobile/features/scanner/views/scanned_items_view.dart';
@@ -113,6 +114,17 @@ class AppPages {
       binding: ScanOptionsBinding(),
       middlewares: <GetMiddleware>[AuthMiddleware()],
       fullscreenDialog: true,
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.purchaseStock,
+      page: () => const PurchaseStockView(),
+      binding: PurchaseStockBinding(),
+      middlewares: <GetMiddleware>[AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.salesStock,
+      page: () => const SalesStockView(),
+      middlewares: <GetMiddleware>[AuthMiddleware()],
     ),
     GetPage<dynamic>(
       name: AppRoutes.scanCompany,
