@@ -37,6 +37,7 @@ class SuperAdminProductsView extends GetView<SuperAdminProductsController> {
       ),
       floatingActionButton: controller.canCreate
           ? FloatingActionButton.extended(
+              heroTag: 'fab_super_admin_products',
               onPressed: controller.createProduct,
               icon: const Icon(Icons.add_rounded),
               label: const Text('Add product'),

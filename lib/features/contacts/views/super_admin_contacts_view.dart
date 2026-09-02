@@ -22,6 +22,7 @@ class SuperAdminContactsView extends GetView<SuperAdminContactsController> {
       ),
       floatingActionButton: controller.canCreate
           ? FloatingActionButton.extended(
+              heroTag: 'fab_super_admin_contacts',
               onPressed: controller.createContact,
               icon: const Icon(Icons.person_add_alt_1_rounded),
               label: const Text('Add contact'),

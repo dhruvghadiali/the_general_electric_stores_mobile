@@ -37,6 +37,7 @@ class StatTile extends StatelessWidget {
           padding: const EdgeInsets.all(AppDimens.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               if (icon != null) ...<Widget>[
@@ -58,26 +59,6 @@ class StatTile extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// The two-column grid the dashboards lay their tiles out in.
-class StatGrid extends StatelessWidget {
-  const StatGrid({required this.children, super.key});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      crossAxisSpacing: AppDimens.md,
-      mainAxisSpacing: AppDimens.md,
-      childAspectRatio: 1.35,
-      children: children,
     );
   }
 }
