@@ -7,7 +7,7 @@ import 'package:the_general_electric_stores_mobile/core/utils/app_snackbar.dart'
 import 'package:the_general_electric_stores_mobile/core/utils/formatters.dart';
 import 'package:the_general_electric_stores_mobile/core/widgets/app_button.dart';
 import 'package:the_general_electric_stores_mobile/features/scanner/controllers/scanned_items_controller.dart';
-import 'package:the_general_electric_stores_mobile/features/scanner/data/models/scan_purpose.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/models/scanned_item.dart';
 
 /// Everything read so far, newest first.
 ///

@@ -6,7 +6,11 @@ import 'package:get/get.dart';
 import 'package:the_general_electric_stores_mobile/app/routes/app_routes.dart';
 import 'package:the_general_electric_stores_mobile/core/utils/app_snackbar.dart';
 import 'package:the_general_electric_stores_mobile/features/companies/data/models/company_model.dart';
-import 'package:the_general_electric_stores_mobile/features/scanner/data/models/scan_purpose.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/constants/scan_purpose.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/models/scan_context.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/models/scan_result.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/models/scanned_code.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/models/scanned_item.dart';
 
 /// Holds the codes read during one scanning session and shows them back.
 ///

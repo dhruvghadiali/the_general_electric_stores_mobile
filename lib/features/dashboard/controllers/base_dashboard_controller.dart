@@ -11,7 +11,7 @@ import 'package:the_general_electric_stores_mobile/core/utils/app_snackbar.dart'
 import 'package:the_general_electric_stores_mobile/core/utils/logger.dart';
 import 'package:the_general_electric_stores_mobile/features/dashboard/data/models/dashboard_summary.dart';
 import 'package:the_general_electric_stores_mobile/features/dashboard/data/repositories/dashboard_repository.dart';
-import 'package:the_general_electric_stores_mobile/features/scanner/data/models/scan_purpose.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/models/scan_result.dart';
 
 /// Loading and failure handling shared by all three dashboards.
 ///

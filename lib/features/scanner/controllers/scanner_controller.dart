@@ -5,7 +5,9 @@ import 'package:get/get.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import 'package:the_general_electric_stores_mobile/core/utils/logger.dart';
-import 'package:the_general_electric_stores_mobile/features/scanner/data/models/scan_purpose.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/constants/scan_purpose.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/constants/scan_symbology.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/models/scanned_code.dart';
 
 /// Drives the scanning screen.
 ///

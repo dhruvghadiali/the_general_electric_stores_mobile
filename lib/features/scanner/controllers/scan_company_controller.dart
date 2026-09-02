@@ -8,7 +8,9 @@ import 'package:the_general_electric_stores_mobile/core/network/api_exception.da
 import 'package:the_general_electric_stores_mobile/core/services/auth_service.dart';
 import 'package:the_general_electric_stores_mobile/features/companies/data/models/company_model.dart';
 import 'package:the_general_electric_stores_mobile/features/companies/data/repositories/company_repository.dart';
-import 'package:the_general_electric_stores_mobile/features/scanner/data/models/scan_purpose.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/constants/scan_purpose.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/models/scan_context.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/models/scan_result.dart';
 
 /// Picks the company a scan is attributed to, then opens the camera.
 ///

@@ -1,7 +1,8 @@
 import 'package:get/get.dart';
 
 import 'package:the_general_electric_stores_mobile/app/routes/app_routes.dart';
-import 'package:the_general_electric_stores_mobile/features/scanner/data/models/scan_purpose.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/constants/scan_purpose.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/models/scan_result.dart';
 
 /// The first step of a scan: what is this for?
 ///
