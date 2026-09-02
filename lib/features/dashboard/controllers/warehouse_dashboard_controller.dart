@@ -5,14 +5,13 @@ import 'package:the_general_electric_stores_mobile/features/dashboard/data/repos
 /// The warehouse manager's view: what is on the shelf and what needs ordering.
 /// No revenue, no contacts — nothing outside the warehouse.
 class WarehouseDashboardController extends BaseDashboardController {
-  WarehouseDashboardController(DashboardRepository repository, UserRole role)
-      : super(repository, role);
+  WarehouseDashboardController(super.repository, super.role);
 
   num? get totalStockLines =>
       summary.value.read(<String>['stocks_total', 'total_stocks', 'stocks']);
 
-  num? get lowStock =>
-      summary.value.read(<String>['stocks_low', 'low_stock', 'low_stock_count']);
+  num? get lowStock => summary.value
+      .read(<String>['stocks_low', 'low_stock', 'low_stock_count']);
 
   num? get outOfStock => summary.value
       .read(<String>['stocks_out', 'out_of_stock', 'out_of_stock_count']);

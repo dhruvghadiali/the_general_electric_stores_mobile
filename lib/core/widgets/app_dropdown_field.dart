@@ -55,7 +55,7 @@ class _AppDropdownFieldState<T> extends State<AppDropdownField<T>> {
         Text(widget.label, style: theme.textTheme.titleSmall),
         const SizedBox(height: AppDimens.sm),
         DropdownButtonFormField<T>(
-          value: widget.value,
+          initialValue: widget.value,
           isExpanded: true,
           validator: (T? value) => serverError ?? widget.validator?.call(value),
           onChanged: widget.enabled
