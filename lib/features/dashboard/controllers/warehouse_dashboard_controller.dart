@@ -1,6 +1,4 @@
-import 'package:the_general_electric_stores_mobile/core/constants/user_role.dart';
 import 'package:the_general_electric_stores_mobile/features/dashboard/controllers/base_dashboard_controller.dart';
-import 'package:the_general_electric_stores_mobile/features/dashboard/data/repositories/dashboard_repository.dart';
 
 /// The warehouse manager's view: what is on the shelf and what needs ordering.
 /// No revenue, no contacts — nothing outside the warehouse.
