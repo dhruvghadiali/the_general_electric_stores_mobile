@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
 import 'package:the_general_electric_stores_mobile/core/constants/app_constants.dart';
@@ -12,6 +13,7 @@ import 'package:the_general_electric_stores_mobile/features/companies/data/repos
 import 'package:the_general_electric_stores_mobile/features/products/data/models/product_model.dart';
 import 'package:the_general_electric_stores_mobile/features/products/data/repositories/product_repository.dart';
 import 'package:the_general_electric_stores_mobile/features/scanner/controllers/purchase_stock/product_selection.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/controllers/purchase_stock/stocks_validator.dart';
 import 'package:the_general_electric_stores_mobile/features/scanner/controllers/purchase_stock/supplier_selection.dart';
 
 /// Purchase stock: which supplier are these goods arriving from, and which of
@@ -57,6 +59,25 @@ class PurchaseStockController extends GetxController {
   final Rxn<ApiException> productFailure = Rxn<ApiException>();
   final RxBool isProductTruncated = false.obs;
   final RxString productQuery = ''.obs;
+
+  // ---------------------------------------------------------------- stocks
+  /// The form the stocks field validates through. Held here rather than in the
+  /// view because the view is rebuilt on every `Obx` tick and a key recreated
+  /// with it would lose the field's error state.
+  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+
+  final TextEditingController stocksInput = TextEditingController();
+
+  /// The typed quantity, or null while it is empty or not yet a valid number.
+  int? get stocks => int.tryParse(stocksInput.text.trim());
+
+  /// True when every field on the screen is filled in well enough to act on.
+  /// Nothing calls it yet — the screen has no submit — but the rule belongs
+  /// with the state it reads, not with the button that will one day use it.
+  bool get isComplete =>
+      selectedCompanyId != null &&
+      selectedProductId != null &&
+      validateStocks(stocksInput.text) == null;
 
   /// The supplier the current product list belongs to.
   ///
@@ -107,6 +128,7 @@ class PurchaseStockController extends GetxController {
     _supplierWatch?.dispose();
     _supplierDebounce?.cancel();
     _productDebounce?.cancel();
+    stocksInput.dispose();
     super.onClose();
   }
 
