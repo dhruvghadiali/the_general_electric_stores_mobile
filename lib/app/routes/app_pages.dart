@@ -8,7 +8,7 @@ import 'package:the_general_electric_stores_mobile/features/auth/views/login_vie
 import 'package:the_general_electric_stores_mobile/features/contacts/views/contact_detail_view.dart';
 import 'package:the_general_electric_stores_mobile/features/products/views/product_detail_view.dart';
 import 'package:the_general_electric_stores_mobile/features/scanner/bindings/scanner_binding.dart';
-import 'package:the_general_electric_stores_mobile/features/scanner/views/purchase_stock_view.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/views/purchase_stock/purchase_stock_view.dart';
 import 'package:the_general_electric_stores_mobile/features/scanner/views/sales_stock_view.dart';
 import 'package:the_general_electric_stores_mobile/features/scanner/views/scan_company_view.dart';
 import 'package:the_general_electric_stores_mobile/features/scanner/views/scan_options_view.dart';

@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 
 import 'package:the_general_electric_stores_mobile/core/network/api_client.dart';
 import 'package:the_general_electric_stores_mobile/features/companies/data/repositories/company_repository.dart';
-import 'package:the_general_electric_stores_mobile/features/scanner/controllers/purchase_stock_controller.dart';
+import 'package:the_general_electric_stores_mobile/features/scanner/controllers/purchase_stock/purchase_stock_controller.dart';
 import 'package:the_general_electric_stores_mobile/features/scanner/controllers/scan_company_controller.dart';
 import 'package:the_general_electric_stores_mobile/features/scanner/controllers/scan_options_controller.dart';
 import 'package:the_general_electric_stores_mobile/features/scanner/controllers/scanned_items_controller.dart';
