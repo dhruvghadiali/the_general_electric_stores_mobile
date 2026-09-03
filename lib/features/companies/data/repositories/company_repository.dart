@@ -38,10 +38,21 @@ class CompanyRepository {
   ///
   /// [companyType] is omitted entirely when null, so a picker that wants every
   /// company and one that wants suppliers share this single query.
-  static Map<String, dynamic> pickerQuery({String? companyType}) {
+  ///
+  /// [search] is what the person typed into the dropdown, matched by the API
+  /// against that resource's own `search_fields`. Blank and whitespace-only
+  /// terms are dropped rather than sent: `search=` is not the same request as
+  /// no search at all, and only one of them means "everything".
+  static Map<String, dynamic> pickerQuery({
+    String? companyType,
+    String? search,
+  }) {
+    final String term = search?.trim() ?? '';
+
     return <String, dynamic>{
       'is_active': true,
       if (companyType != null) 'company_type': companyType,
+      if (term.isNotEmpty) 'search': term,
       'sort': 'company_name:asc',
     };
   }
@@ -64,10 +75,14 @@ class CompanyRepository {
   Future<CompanyPage> activeCompanies(
     UserRole role, {
     String? companyType,
+    String? search,
     int maxPages = 25,
   }) async {
     final List<CompanyModel> all = <CompanyModel>[];
-    Map<String, dynamic> query = pickerQuery(companyType: companyType);
+    Map<String, dynamic> query = pickerQuery(
+      companyType: companyType,
+      search: search,
+    );
 
     for (int fetched = 0; fetched < maxPages; fetched++) {
       final PaginatedResult<CompanyModel> page = await _companies(role, query);

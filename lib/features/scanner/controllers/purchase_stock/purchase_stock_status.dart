@@ -15,8 +15,13 @@ import 'package:the_general_electric_stores_mobile/features/scanner/controllers/
 extension PurchaseStockStatus on PurchaseStockController {
   // ------------------------------------------------------------- suppliers
 
-  /// The dropdown is live only once there is something in it to choose.
-  bool get canChoose => !isLoading.value && suppliers.isNotEmpty;
+  /// The dropdown opens once there is something to interact with: rows to pick
+  /// from, or a search term to clear.
+  ///
+  /// That second half matters — a search that matches nothing must not lock the
+  /// field, or the only way back to the full list would be leaving the screen.
+  bool get canChoose =>
+      suppliers.isNotEmpty || supplierQuery.value.trim().isNotEmpty;
 
   /// Retry is offered for a failure, and for an empty list — both are states a
   /// second attempt can change. It is not offered mid-request.
@@ -30,8 +35,9 @@ extension PurchaseStockStatus on PurchaseStockController {
     if (isLoading.value || failure.value != null) return null;
 
     if (suppliers.isEmpty) {
-      return 'No suppliers found. There is nobody to book this stock in '
-          'against.';
+      return supplierQuery.value.trim().isEmpty
+          ? 'No suppliers found. There is nobody to book this stock in against.'
+          : 'No suppliers matched "${supplierQuery.value.trim()}".';
     }
 
     if (isTruncated.value) {
@@ -53,13 +59,13 @@ extension PurchaseStockStatus on PurchaseStockController {
 
   // -------------------------------------------------------------- products
 
-  /// The product dropdown is live only once a supplier has been chosen and its
+  /// The product dropdown opens once a supplier has been chosen and its
   /// catalogue has arrived — the whole point of the chain is that a product
-  /// cannot be picked before the agency it belongs to.
+  /// cannot be picked before the agency it belongs to — or once a search has
+  /// been typed, so an empty result can still be cleared.
   bool get canChooseProduct =>
       selectedCompanyId != null &&
-      !isLoadingProducts.value &&
-      products.isNotEmpty;
+      (products.isNotEmpty || productQuery.value.trim().isNotEmpty);
 
   bool get canRetryProducts =>
       selectedCompanyId != null &&
@@ -77,7 +83,9 @@ extension PurchaseStockStatus on PurchaseStockController {
     if (isLoadingProducts.value || productFailure.value != null) return null;
 
     if (products.isEmpty) {
-      return 'No products found for this supplier.';
+      return productQuery.value.trim().isEmpty
+          ? 'No products found for this supplier.'
+          : 'No products matched "${productQuery.value.trim()}".';
     }
 
     if (isProductTruncated.value) {

@@ -29,10 +29,17 @@ class ProductRepository {
   /// `agency` is the supplier: the API names a product's company that way, and
   /// scoping on the server rather than filtering here is what keeps the list
   /// correct once the catalogue outgrows one page.
-  static Map<String, dynamic> pickerQuery({String? agencyId}) {
+  ///
+  /// [search] is what the person typed into the dropdown. Blank and
+  /// whitespace-only terms are dropped rather than sent: `search=` is not the
+  /// same request as no search at all, and only one of them means "everything".
+  static Map<String, dynamic> pickerQuery({String? agencyId, String? search}) {
+    final String term = search?.trim() ?? '';
+
     return <String, dynamic>{
       'is_active': true,
       if (agencyId != null) 'agency': agencyId,
+      if (term.isNotEmpty) 'search': term,
       'sort': 'name:asc',
     };
   }
@@ -49,10 +56,11 @@ class ProductRepository {
   Future<ProductPage> activeProducts(
     UserRole role, {
     String? agencyId,
+    String? search,
     int maxPages = 25,
   }) async {
     final List<ProductModel> all = <ProductModel>[];
-    Map<String, dynamic> query = pickerQuery(agencyId: agencyId);
+    Map<String, dynamic> query = pickerQuery(agencyId: agencyId, search: search);
 
     for (int fetched = 0; fetched < maxPages; fetched++) {
       final PaginatedResult<ProductModel> page = await _products(role, query);

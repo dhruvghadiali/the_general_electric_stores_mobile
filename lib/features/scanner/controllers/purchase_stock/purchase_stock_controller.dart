@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:get/get.dart';
 
+import 'package:the_general_electric_stores_mobile/core/constants/app_constants.dart';
 import 'package:the_general_electric_stores_mobile/core/constants/user_role.dart';
 import 'package:the_general_electric_stores_mobile/core/network/api_exception.dart';
 import 'package:the_general_electric_stores_mobile/core/services/auth_service.dart';
@@ -45,12 +46,17 @@ class PurchaseStockController extends GetxController {
   /// so the dropdown is showing a prefix rather than all of them.
   final RxBool isTruncated = false.obs;
 
+  /// What was typed into the supplier search, kept so reopening the dropdown
+  /// does not lose it.
+  final RxString supplierQuery = ''.obs;
+
   // -------------------------------------------------------------- products
   final RxList<ProductModel> products = <ProductModel>[].obs;
   final Rxn<ProductModel> selectedProduct = Rxn<ProductModel>();
   final RxBool isLoadingProducts = false.obs;
   final Rxn<ApiException> productFailure = Rxn<ApiException>();
   final RxBool isProductTruncated = false.obs;
+  final RxString productQuery = ''.obs;
 
   /// The supplier the current product list belongs to.
   ///
@@ -62,6 +68,12 @@ class PurchaseStockController extends GetxController {
   /// Disposed explicitly: a worker outliving its controller would keep firing
   /// against state nothing is listening to.
   Worker? _supplierWatch;
+
+  /// One request per pause in typing, not one per keystroke. A plain [Timer] and
+  /// [AppConstants.searchDebounce], matching `BaseListController.search` — the
+  /// list screens already behave this way and the delay is theirs to change.
+  Timer? _supplierDebounce;
+  Timer? _productDebounce;
 
   UserRole? get role => AuthService.to.role.value;
 
@@ -93,6 +105,8 @@ class PurchaseStockController extends GetxController {
   @override
   void onClose() {
     _supplierWatch?.dispose();
+    _supplierDebounce?.cancel();
+    _productDebounce?.cancel();
     super.onClose();
   }
 
@@ -109,20 +123,25 @@ class PurchaseStockController extends GetxController {
       final CompanyPage page = await _companies.activeCompanies(
         current,
         companyType: CompanyTypes.supplier,
+        search: supplierQuery.value,
       );
-
-      // A reload builds new objects, and the dropdown matches its value against
-      // its items by identity — so carry the selection across by id, or drop it
-      // if that supplier is no longer in the list.
-      final String? chosenId = selectedCompanyId;
 
       suppliers.assignAll(page.companies);
       isTruncated.value = !page.isComplete;
 
-      selected.value = page.companies.byId(chosenId);
+      // A reload builds new objects, so the selection is re-pointed at the new
+      // instance when it is still in the list. When it is not — which a search
+      // does routinely — it is *kept*: narrowing the options is not unchoosing
+      // the one already chosen.
+      final CompanyModel? refreshed = page.companies.byId(selectedCompanyId);
+      if (refreshed != null) selected.value = refreshed;
 
-      // One supplier is not a choice — preselect it and save a tap.
-      if (page.companies.length == 1) selected.value = page.companies.first;
+      // One supplier is not a choice — preselect it and save a tap. Only on an
+      // unsearched list: one result for "acm" means the search was narrow, not
+      // that the warehouse has one supplier.
+      if (supplierQuery.value.trim().isEmpty && page.companies.length == 1) {
+        selected.value = page.companies.first;
+      }
     } on ApiException catch (error) {
       failure.value = error;
       suppliers.clear();
@@ -132,6 +151,16 @@ class PurchaseStockController extends GetxController {
   }
 
   void select(CompanyModel? company) => selected.value = company;
+
+  /// Safe to call on every keystroke: the request waits for a pause.
+  void searchSuppliers(String term) {
+    supplierQuery.value = term;
+    _supplierDebounce?.cancel();
+    _supplierDebounce = Timer(
+      AppConstants.searchDebounce,
+      () => unawaited(load()),
+    );
+  }
 
   // -------------------------------------------------------------- products
 
@@ -149,6 +178,8 @@ class PurchaseStockController extends GetxController {
     selectedProduct.value = null;
     productFailure.value = null;
     isProductTruncated.value = false;
+    productQuery.value = '';
+    _productDebounce?.cancel();
 
     // A request already in flight for the previous supplier will not clear this
     // when it returns — it checks that it is still wanted and drops out — so the
@@ -170,6 +201,7 @@ class PurchaseStockController extends GetxController {
       final ProductPage page = await _products.activeProducts(
         current,
         agencyId: agencyId,
+        search: productQuery.value,
       );
 
       // The supplier can be changed again while this request is in flight. A
@@ -177,12 +209,12 @@ class PurchaseStockController extends GetxController {
       // list, so it is dropped rather than shown.
       if (agencyId != _productsFor) return;
 
-      final String? chosenId = selectedProductId;
-
       products.assignAll(page.products);
       isProductTruncated.value = !page.isComplete;
 
-      selectedProduct.value = page.products.byId(chosenId);
+      // Kept when a search filters it out, for the same reason as the supplier.
+      final ProductModel? refreshed = page.products.byId(selectedProductId);
+      if (refreshed != null) selectedProduct.value = refreshed;
     } on ApiException catch (error) {
       if (agencyId != _productsFor) return;
       productFailure.value = error;
@@ -193,6 +225,16 @@ class PurchaseStockController extends GetxController {
   }
 
   void selectProduct(ProductModel? product) => selectedProduct.value = product;
+
+  /// Safe to call on every keystroke: the request waits for a pause.
+  void searchProducts(String term) {
+    productQuery.value = term;
+    _productDebounce?.cancel();
+    _productDebounce = Timer(
+      AppConstants.searchDebounce,
+      () => unawaited(loadProducts()),
+    );
+  }
 
   void cancel() => Get.back<Object?>();
 }
