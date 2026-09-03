@@ -1,5 +1,4 @@
 import 'package:the_general_electric_stores_mobile/core/constants/api_endpoints.dart';
-import 'package:the_general_electric_stores_mobile/core/constants/app_constants.dart';
 import 'package:the_general_electric_stores_mobile/core/constants/user_role.dart';
 import 'package:the_general_electric_stores_mobile/core/models/list_query.dart';
 import 'package:the_general_electric_stores_mobile/core/network/api_client.dart';
@@ -10,7 +9,7 @@ import 'package:the_general_electric_stores_mobile/features/companies/data/model
 ///
 /// ```
 /// GET /warehouse-manager/companies
-///     ?is_active=true&sort=company_name:asc&page=1&limit=20
+///     ?is_active=true&company_type=supplier&sort=company_name:asc
 /// ```
 ///
 /// All three roles may list companies; only an employee may read one or write
@@ -20,54 +19,58 @@ class CompanyRepository {
 
   final ApiClient _api;
 
-  /// The query behind every company picker: live companies only, in the order
-  /// a person reads them.
+  /// The query behind every company picker, written exactly as the API wants
+  /// it:
+  ///
+  /// ```
+  /// ?is_active=true&company_type=supplier&sort=company_name:asc
+  /// ```
+  ///
+  /// A plain map rather than a [ListQuery] because that always emits `page` and
+  /// `limit`, and this call is defined by the keys above — the server's own
+  /// default page size decides the rest.
   ///
   /// `sort` rather than `sort_by`/`sort_order` — the API accepts both but makes
   /// them mutually exclusive (`.oxor`), and the single-token form is the one
   /// that cannot fall out of step with itself. `company_name` is also the only
   /// company column the API gives English collation to, so `acme` sorts before
   /// `Bharat` instead of after it.
-  static const ListQuery activePickerQuery = ListQuery(
-    page: AppConstants.defaultPage,
-    limit: AppConstants.defaultPageLimit,
-    sort: <String>['company_name:asc'],
-    filters: <String, dynamic>{'is_active': true},
-  );
+  ///
+  /// [companyType] is omitted entirely when null, so a picker that wants every
+  /// company and one that wants suppliers share this single query.
+  static Map<String, dynamic> pickerQuery({String? companyType}) {
+    return <String, dynamic>{
+      'is_active': true,
+      if (companyType != null) 'company_type': companyType,
+      'sort': 'company_name:asc',
+    };
+  }
 
-  /// Every active company, gathered a page at a time.
+  /// Every active company, gathered a page at a time, as full [CompanyModel]s.
   ///
-  /// A picker needs the whole list, and the API's page size is 20. Asking for
-  /// `limit=100` in one shot would work today and break silently on the
-  /// hundred-and-first company, so this follows `pagination.total_pages`
-  /// instead — the first request is exactly [activePickerQuery], and each
-  /// further page is the same query with `page` advanced.
+  /// The rows are parsed whole rather than trimmed to what a dropdown shows:
+  /// the same call feeds pickers that only need a name today and screens that
+  /// will want the address, GST number or contacts tomorrow, and none of them
+  /// should need a second endpoint or a second model to get there.
   ///
-  /// [maxPages] is a stop, not a page size. A dropdown holding five hundred
-  /// companies is the wrong control regardless of how patiently it loaded them,
-  /// and the cap is what stops a wrong `total_pages` fetching forever. Reaching
-  /// it is reported rather than hidden — see [CompanyPage.isComplete].
+  /// The first request is [pickerQuery] verbatim. Further pages are asked for
+  /// only when `pagination` reports them, so the common case is one request and
+  /// a list that outgrows the server's page size does not silently lose its
+  /// tail.
   ///
-  /// [companyType] narrows the walk to one `company_type` — a purchase asks for
-  /// suppliers, and filtering on the server is the only version of that which
-  /// stays correct once the list is longer than one page.
+  /// [maxPages] is a stop, not a page size: it bounds a `total_pages` the
+  /// server got wrong. Reaching it is reported rather than hidden — see
+  /// [CompanyPage.isComplete].
   Future<CompanyPage> activeCompanies(
     UserRole role, {
     String? companyType,
     int maxPages = 25,
   }) async {
     final List<CompanyModel> all = <CompanyModel>[];
-    ListQuery query = companyType == null
-        ? activePickerQuery
-        : activePickerQuery.copyWith(
-            filters: <String, dynamic>{
-              ...activePickerQuery.filters,
-              'company_type': companyType,
-            },
-          );
+    Map<String, dynamic> query = pickerQuery(companyType: companyType);
 
     for (int fetched = 0; fetched < maxPages; fetched++) {
-      final PaginatedResult<CompanyModel> page = await list(role, query);
+      final PaginatedResult<CompanyModel> page = await _companies(role, query);
       all.addAll(page.items);
 
       // An empty page ends the walk whatever the pagination block claims:
@@ -76,7 +79,7 @@ class CompanyRepository {
         return CompanyPage(companies: all, isComplete: true);
       }
 
-      query = query.copyWith(page: page.pagination.nextPage);
+      query = <String, dynamic>{...query, 'page': page.pagination.nextPage};
     }
 
     return CompanyPage(companies: all, isComplete: false);
@@ -85,11 +88,18 @@ class CompanyRepository {
   Future<PaginatedResult<CompanyModel>> list(
     UserRole role,
     ListQuery query,
+  ) =>
+      _companies(role, query.toQueryParameters());
+
+  /// The one place a company list is fetched and parsed.
+  Future<PaginatedResult<CompanyModel>> _companies(
+    UserRole role,
+    Map<String, dynamic> query,
   ) async {
     final ApiResponse<PaginatedResult<CompanyModel>> response =
         await _api.get<PaginatedResult<CompanyModel>>(
       ApiEndpoints.companies(role),
-      query: query.toQueryParameters(),
+      query: query,
       parser: (Object? data) => PaginatedResult<CompanyModel>.fromData(
         data,
         itemsKey: 'companies',

@@ -6,7 +6,7 @@ import 'package:the_general_electric_stores_mobile/core/constants/user_role.dart
 import 'package:the_general_electric_stores_mobile/core/network/api_exception.dart';
 import 'package:the_general_electric_stores_mobile/core/services/auth_service.dart';
 import 'package:the_general_electric_stores_mobile/features/companies/constants/company_types.dart';
-import 'package:the_general_electric_stores_mobile/features/companies/data/models/company_model.dart';
+import 'package:the_general_electric_stores_mobile/features/companies/data/models/company_option.dart';
 import 'package:the_general_electric_stores_mobile/features/companies/data/repositories/company_repository.dart';
 
 /// Purchase stock: which supplier are these goods arriving from?
@@ -20,8 +20,8 @@ class PurchaseStockController extends GetxController {
 
   final CompanyRepository _repository;
 
-  final RxList<CompanyModel> suppliers = <CompanyModel>[].obs;
-  final Rxn<CompanyModel> selected = Rxn<CompanyModel>();
+  final RxList<CompanyOption> suppliers = <CompanyOption>[].obs;
+  final Rxn<CompanyOption> selected = Rxn<CompanyOption>();
   final RxBool isLoading = false.obs;
   final Rxn<ApiException> failure = Rxn<ApiException>();
 
@@ -45,16 +45,23 @@ class PurchaseStockController extends GetxController {
     failure.value = null;
 
     try {
-      final CompanyPage page = await _repository.activeCompanies(
+      final CompanyOptionPage page = await _repository.companyOptions(
         current,
         companyType: CompanyTypes.supplier,
       );
 
-      suppliers.assignAll(page.companies);
+      suppliers.assignAll(page.options);
       isTruncated.value = !page.isComplete;
 
+      // Keep a selection the user already made across a reload; the rows are
+      // rebuilt objects, so this relies on `CompanyOption`'s id equality.
+      final CompanyOption? chosen = selected.value;
+      if (chosen != null && !page.options.contains(chosen)) {
+        selected.value = null;
+      }
+
       // One supplier is not a choice — preselect it and save a tap.
-      if (page.companies.length == 1) selected.value = page.companies.first;
+      if (page.options.length == 1) selected.value = page.options.first;
     } on ApiException catch (error) {
       failure.value = error;
       suppliers.clear();
@@ -63,7 +70,7 @@ class PurchaseStockController extends GetxController {
     }
   }
 
-  void select(CompanyModel? company) => selected.value = company;
+  void select(CompanyOption? company) => selected.value = company;
 
   void cancel() => Get.back<Object?>();
 }

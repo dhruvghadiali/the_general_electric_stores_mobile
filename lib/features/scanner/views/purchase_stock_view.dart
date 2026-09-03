@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import 'package:the_general_electric_stores_mobile/app/theme/app_dimens.dart';
 import 'package:the_general_electric_stores_mobile/core/widgets/app_dropdown_field.dart';
 import 'package:the_general_electric_stores_mobile/core/widgets/state_views.dart';
-import 'package:the_general_electric_stores_mobile/features/companies/data/models/company_model.dart';
+import 'package:the_general_electric_stores_mobile/features/companies/data/models/company_option.dart';
 import 'package:the_general_electric_stores_mobile/features/scanner/controllers/purchase_stock_controller.dart';
 
 /// Where "Purchase stock" lands: items arriving into the warehouse.
@@ -56,15 +56,15 @@ class PurchaseStockView extends GetView<PurchaseStockController> {
             padding: const EdgeInsets.all(AppDimens.screenPadding),
             children: <Widget>[
               Obx(
-                () => AppDropdownField<CompanyModel>(
+                () => AppDropdownField<CompanyOption>(
                   label: 'Supplier',
                   hint: 'Choose a supplier',
                   prefixIcon: Icons.domain_outlined,
                   items: controller.suppliers,
-                  itemLabel: (CompanyModel company) => company.name,
+                  itemLabel: (CompanyOption company) => company.name,
                   value: controller.selected.value,
                   onChanged: controller.select,
-                  validator: (CompanyModel? value) =>
+                  validator: (CompanyOption? value) =>
                       value == null ? 'Choose a supplier.' : null,
                 ),
               ),
